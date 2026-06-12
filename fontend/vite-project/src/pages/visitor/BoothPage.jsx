@@ -6,22 +6,32 @@ export default function BoothPage() {
   const [booth, setBooth] = useState("VinAI");
 
   const handleTranslate = () => {
+<<<<<<< HEAD
     let content =
       booth === "VinAI"
         ? "VinAI là công ty trí tuệ nhân tạo hàng đầu Việt Nam."
         : "FPT Software là công ty công nghệ hàng đầu.";
+=======
+    let content = booth === "VinAI"
+      ? "VinAI là công ty AI hàng đầu Việt Nam."
+      : "FPT Software là công ty công nghệ hàng đầu.";
+>>>>>>> 076ed7828b546fe245f0a8fd9a90efd260715770
 
     setText(`[${lang}] ${content}`);
   };
 
   const handleSpeak = () => {
+<<<<<<< HEAD
     if (!text) return;
+=======
+>>>>>>> 076ed7828b546fe245f0a8fd9a90efd260715770
     const speech = new SpeechSynthesisUtterance(text);
     speech.lang = lang === "en" ? "en-US" : "vi-VN";
     speechSynthesis.speak(speech);
   };
 
   return (
+<<<<<<< HEAD
     <div
       style={{
         backgroundColor: "#eef2f7",
@@ -113,8 +123,46 @@ export default function BoothPage() {
           }}
         >
           {text || "Nội dung thuyết minh sẽ hiển thị tại đây..."}
+=======
+    <div style={{ background: "#f5f5f5", minHeight: "100vh", padding: 40 }}>
+      <div style={{
+        maxWidth: 600,
+        margin: "auto",
+        padding: 30,
+        background: "#fff",
+        borderRadius: 10,
+        boxShadow: "0 0 10px rgba(0,0,0,0.1)"
+      }}>
+        <h2>🎤 Thuyết minh gian hàng</h2>
+
+        <p>Gian hàng:</p>
+        <select onChange={(e) => setBooth(e.target.value)}>
+          <option>VinAI</option>
+          <option>FPT Software</option>
+        </select>
+
+        <p>Ngôn ngữ:</p>
+        <select onChange={(e) => setLang(e.target.value)}>
+          <option value="vi">Tiếng Việt</option>
+          <option value="en">English</option>
+        </select>
+
+        <br /><br />
+
+        <button onClick={handleTranslate}>📄 Dịch</button>
+        <button onClick={handleSpeak} style={{ marginLeft: 10 }}>
+          🔊 Phát
+        </button>
+
+        <div style={{ marginTop: 20, padding: 10, border: "1px solid #ccc" }}>
+          {text || "Nội dung sẽ hiển thị tại đây..."}
+>>>>>>> 076ed7828b546fe245f0a8fd9a90efd260715770
         </div>
       </div>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 076ed7828b546fe245f0a8fd9a90efd260715770
