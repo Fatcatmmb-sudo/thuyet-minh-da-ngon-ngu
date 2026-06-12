@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import Toast, { useToast } from "../../components/Toast/Toast";
+import accountService from "../../services/accountService";
 import "./AccountManagementPage.css";
 
 // ─── Icons ───────────────────────────────────────────────────
@@ -14,16 +15,6 @@ const IconRefresh  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill=
 const IconChevronL = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>;
 const IconChevronR = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>;
 const IconUser     = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-
-// ─── Seed data ───────────────────────────────────────────────
-const SEED_ACCOUNTS = [
-  { id: 1, username: "admin01",   email: "admin@autonarration.vn",  role: "Admin",  status: "active",   createdAt: "2025-01-10", company: "",                  representative: "",          phone: "" },
-  { id: 2, username: "vinai_acc", email: "vendor@vinai.io",         role: "Vendor", status: "active",   createdAt: "2025-03-15", company: "VinAI Research",    representative: "Nguyễn A",  phone: "0901234567" },
-  { id: 3, username: "fpt_acc",   email: "vendor@fpt.com.vn",       role: "Vendor", status: "inactive", createdAt: "2025-03-20", company: "FPT Software",      representative: "Trần B",    phone: "0912345678" },
-  { id: 4, username: "admin02",   email: "admin2@autonarration.vn", role: "Admin",  status: "active",   createdAt: "2025-04-01", company: "",                  representative: "",          phone: "" },
-  { id: 5, username: "viettel_v", email: "vendor@viettel.vn",       role: "Vendor", status: "active",   createdAt: "2025-04-05", company: "Viettel Innovation", representative: "Lê C",     phone: "0923456789" },
-  { id: 6, username: "samsung_v", email: "vendor@samsung.com",      role: "Vendor", status: "active",   createdAt: "2025-05-01", company: "Samsung Vietnam",   representative: "Kim D",     phone: "0934567890" },
-];
 
 const PAGE_SIZE = 5;
 
@@ -43,7 +34,7 @@ function validateForm(form) {
   return errors;
 }
 
-// ─── Account Form Modal (chỉ dùng ở trang này) ──────────────
+// ─── Account Form Modal ──────────────────────────────────────
 function AccountFormModal({ initial, onSave, onClose }) {
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
@@ -54,17 +45,23 @@ function AccountFormModal({ initial, onSave, onClose }) {
     representative: initial?.representative ?? "",
     phone:          initial?.phone          ?? "",
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors]   = useState({});
+  const [saving, setSaving]   = useState(false);
 
   function set(key, val) {
     setForm(f => ({ ...f, [key]: val }));
     setErrors(e => ({ ...e, [key]: undefined }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     const errs = validateForm(form);
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    onSave(form);
+    setSaving(true);
+    try {
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -136,9 +133,9 @@ function AccountFormModal({ initial, onSave, onClose }) {
         </div>
 
         <div className="am-modal-footer">
-          <button className="am-btn am-btn--ghost" onClick={onClose}>Hủy</button>
-          <button className="am-btn am-btn--primary" onClick={handleSave}>
-            {isEdit ? "Lưu thay đổi" : "Tạo tài khoản"}
+          <button className="am-btn am-btn--ghost" onClick={onClose} disabled={saving}>Hủy</button>
+          <button className="am-btn am-btn--primary" onClick={handleSave} disabled={saving}>
+            {saving ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo tài khoản"}
           </button>
         </div>
       </div>
@@ -146,55 +143,82 @@ function AccountFormModal({ initial, onSave, onClose }) {
   );
 }
 
+// ─── Skeleton Row ────────────────────────────────────────────
+function SkeletonRows({ count = 5 }) {
+  return Array.from({ length: count }).map((_, i) => (
+    <tr key={i} className="am-skeleton-row">
+      {Array.from({ length: 6 }).map((_, j) => (
+        <td key={j}><div className="am-skeleton-cell" /></td>
+      ))}
+    </tr>
+  ));
+}
+
 // ─── Main Page ───────────────────────────────────────────────
 export default function AccountManagementPage() {
-  const [accounts, setAccounts]     = useState(SEED_ACCOUNTS);
+  // ── State ────────────────────────────────────────────────
+  const [accounts, setAccounts]     = useState([]);
+  const [total, setTotal]           = useState(0);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
+
   const [activeTab, setActiveTab]   = useState("all");
   const [search, setSearch]         = useState("");
   const [page, setPage]             = useState(1);
+
   const [modalForm, setModalForm]   = useState(null);
   const [confirm, setConfirm]       = useState({ isOpen: false });
   const [pendingAction, setPending] = useState(null);
   const { toasts, showToast }       = useToast();
 
-  // ── Tab counts ────────────────────────────────────────────
+  // ── Fetch ────────────────────────────────────────────────
+  const fetchAccounts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const role = activeTab === "all" ? "" : activeTab;
+      const res  = await accountService.getAll({ page, pageSize: PAGE_SIZE, role, search });
+      setAccounts(res.items);
+      setTotal(res.total);
+    } catch (err) {
+      setError(err.message || "Không thể tải danh sách tài khoản.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, activeTab, search]);
+
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+
+  // ── Tab counts (từ total API; nếu cần count theo role thì gọi thêm) ──
+  // Tạm tính từ dữ liệu đang hiển thị
   const counts = useMemo(() => ({
-    all:    accounts.length,
+    all:    total,
     Admin:  accounts.filter(a => a.role === "Admin").length,
     Vendor: accounts.filter(a => a.role === "Vendor").length,
-  }), [accounts]);
+  }), [accounts, total]);
 
-  // ── Filter + paginate ─────────────────────────────────────
-  const filtered = useMemo(() => {
-    let list = accounts;
-    if (activeTab !== "all") list = list.filter(a => a.role === activeTab);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(a =>
-        a.username.toLowerCase().includes(q) ||
-        a.email.toLowerCase().includes(q) ||
-        a.company?.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [accounts, activeTab, search]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function changeTab(tab) { setActiveTab(tab); setPage(1); }
-  function handleSearch(v) { setSearch(v); setPage(1); }
+
+  // Debounce search
+  const [searchInput, setSearchInput] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   // ── Save form ─────────────────────────────────────────────
-  function handleSaveForm(form) {
+  async function handleSaveForm(form) {
     if (modalForm.mode === "create") {
-      setAccounts(a => [...a, { ...form, id: Date.now(), status: "active", createdAt: new Date().toISOString().slice(0, 10) }]);
+      await accountService.create(form);
       showToast("Tạo tài khoản thành công — mật khẩu đã gửi qua email.");
     } else {
-      setAccounts(a => a.map(x => x.id === modalForm.data.id ? { ...x, ...form } : x));
+      await accountService.update(modalForm.data.id, form);
       showToast("Đã lưu thay đổi.");
     }
     setModalForm(null);
+    fetchAccounts();
   }
 
   // ── Toggle status ─────────────────────────────────────────
@@ -203,7 +227,7 @@ export default function AccountManagementPage() {
     setPending({ type: "toggle", acc });
     setConfirm({
       isOpen:       true,
-      variant:      willLock ? "warning" : "warning",
+      variant:      "warning",
       title:        willLock ? `Khóa tài khoản ${acc.username}?` : `Mở tài khoản ${acc.username}?`,
       message:      willLock
         ? "Tài khoản này sẽ không thể đăng nhập cho đến khi được mở lại."
@@ -224,22 +248,29 @@ export default function AccountManagementPage() {
     });
   }
 
-  function handleConfirm() {
-    if (pendingAction?.type === "toggle") {
-      const { acc } = pendingAction;
-      setAccounts(a => a.map(x => x.id === acc.id
-        ? { ...x, status: x.status === "active" ? "inactive" : "active" }
-        : x
-      ));
-      showToast(
-        acc.status === "active" ? `Đã khóa tài khoản ${acc.username}.` : `Đã mở tài khoản ${acc.username}.`,
-        acc.status === "active" ? "warning" : "success"
-      );
-    } else if (pendingAction?.type === "reset") {
-      showToast(`Mật khẩu mới đã gửi tới ${pendingAction.acc.email}.`);
-    }
+  async function handleConfirm() {
     setConfirm({ isOpen: false });
-    setPending(null);
+    try {
+      if (pendingAction?.type === "toggle") {
+        const { acc } = pendingAction;
+        const newStatus = acc.status === "active" ? "inactive" : "active";
+        await accountService.setStatus(acc.id, newStatus);
+        showToast(
+          newStatus === "inactive"
+            ? `Đã khóa tài khoản ${acc.username}.`
+            : `Đã mở tài khoản ${acc.username}.`,
+          newStatus === "inactive" ? "warning" : "success"
+        );
+        fetchAccounts();
+      } else if (pendingAction?.type === "reset") {
+        await accountService.resetPassword(pendingAction.acc.id);
+        showToast(`Mật khẩu mới đã gửi tới ${pendingAction.acc.email}.`);
+      }
+    } catch (err) {
+      showToast(err.message || "Có lỗi xảy ra.", "error");
+    } finally {
+      setPending(null);
+    }
   }
 
   function handleCancel() {
@@ -288,11 +319,19 @@ export default function AccountManagementPage() {
           <input
             className="am-search"
             placeholder="Tìm theo tên, email, công ty..."
-            value={search}
-            onChange={e => handleSearch(e.target.value)}
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
           />
         </div>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="am-error-banner">
+          ⚠️ {error}
+          <button onClick={fetchAccounts}>Thử lại</button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="am-table-card">
@@ -308,7 +347,9 @@ export default function AccountManagementPage() {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <SkeletonRows count={PAGE_SIZE} />
+            ) : accounts.length === 0 ? (
               <tr>
                 <td colSpan={6}>
                   <div className="am-empty">
@@ -317,7 +358,7 @@ export default function AccountManagementPage() {
                   </div>
                 </td>
               </tr>
-            ) : paginated.map(acc => (
+            ) : accounts.map(acc => (
               <tr key={acc.id}>
 
                 {/* User */}
@@ -388,21 +429,22 @@ export default function AccountManagementPage() {
         </table>
 
         {/* Pagination */}
-        {filtered.length > PAGE_SIZE && (
+        {total > PAGE_SIZE && (
           <div className="am-pagination">
             <span className="am-pagination-info">
-              Hiển thị {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} / {filtered.length} tài khoản
+              Hiển thị {Math.min((page - 1) * PAGE_SIZE + 1, total)}–{Math.min(page * PAGE_SIZE, total)} / {total} tài khoản
             </span>
             <div className="am-pagination-btns">
-              <button className="am-page-btn" onClick={() => setPage(p => p - 1)} disabled={page === 1}>
+              <button className="am-page-btn" onClick={() => setPage(p => p - 1)} disabled={page === 1 || loading}>
                 <IconChevronL />
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <button key={n} className={`am-page-btn ${n === page ? "active" : ""}`} onClick={() => setPage(n)}>
+                <button key={n} className={`am-page-btn ${n === page ? "active" : ""}`}
+                  onClick={() => setPage(n)} disabled={loading}>
                   {n}
                 </button>
               ))}
-              <button className="am-page-btn" onClick={() => setPage(p => p + 1)} disabled={page === totalPages}>
+              <button className="am-page-btn" onClick={() => setPage(p => p + 1)} disabled={page === totalPages || loading}>
                 <IconChevronR />
               </button>
             </div>
@@ -410,7 +452,7 @@ export default function AccountManagementPage() {
         )}
       </div>
 
-      {/* Form Modal (riêng của trang này) */}
+      {/* Form Modal */}
       {modalForm && (
         <AccountFormModal
           initial={modalForm.data}
