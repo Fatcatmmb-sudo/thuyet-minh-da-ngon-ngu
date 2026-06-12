@@ -6,122 +6,52 @@ export default function BoothPage() {
   const [booth, setBooth] = useState("VinAI");
 
   const handleTranslate = () => {
-    let content = "";
-
-    if (booth === "VinAI") {
-      content =
-        "VinAI là công ty trí tuệ nhân tạo hàng đầu Việt Nam, chuyên nghiên cứu và phát triển công nghệ AI tiên tiến.";
-    } else {
-      content =
-        "FPT Software là công ty công nghệ hàng đầu cung cấp giải pháp phần mềm cho khách hàng toàn cầu.";
-    }
+    let content = booth === "VinAI"
+      ? "VinAI là công ty AI hàng đầu Việt Nam."
+      : "FPT Software là công ty công nghệ hàng đầu.";
 
     setText(`[${lang}] ${content}`);
   };
 
   const handleSpeak = () => {
-    if (!text) return;
-
     const speech = new SpeechSynthesisUtterance(text);
     speech.lang = lang === "en" ? "en-US" : "vi-VN";
-
     speechSynthesis.speak(speech);
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: "#f4f6f9",
-        minHeight: "100vh",
-        padding: "40px",
-        fontFamily: "Segoe UI",
-      }}
-    >
-      {/* CARD */}
-      <div
-        style={{
-          maxWidth: "800px",
-          margin: "auto",
-          backgroundColor: "white",
-          padding: "30px",
-          borderRadius: "10px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-        }}
-      >
-        {/* HEADER */}
-        <h2 style={{ marginBottom: "20px" }}>
-          🎤 Thuyết minh gian hàng
-        </h2>
+    <div style={{ background: "#f5f5f5", minHeight: "100vh", padding: 40 }}>
+      <div style={{
+        maxWidth: 600,
+        margin: "auto",
+        padding: 30,
+        background: "#fff",
+        borderRadius: 10,
+        boxShadow: "0 0 10px rgba(0,0,0,0.1)"
+      }}>
+        <h2>🎤 Thuyết minh gian hàng</h2>
 
-        {/* SELECT BOOTH */}
-        <div style={{ marginBottom: "15px" }}>
-          <label>Gian hàng:</label>
-          <br />
-          <select
-            onChange={(e) => setBooth(e.target.value)}
-            style={{ padding: "5px", width: "200px" }}
-          >
-            <option value="VinAI">VinAI</option>
-            <option value="FPT Software">FPT Software</option>
-          </select>
-        </div>
+        <p>Gian hàng:</p>
+        <select onChange={(e) => setBooth(e.target.value)}>
+          <option>VinAI</option>
+          <option>FPT Software</option>
+        </select>
 
-        {/* SELECT LANG */}
-        <div style={{ marginBottom: "20px" }}>
-          <label>Ngôn ngữ:</label>
-          <br />
-          <select
-            onChange={(e) => setLang(e.target.value)}
-            style={{ padding: "5px", width: "200px" }}
-          >
-            <option value="vi">Tiếng Việt</option>
-            <option value="en">English</option>
-          </select>
-        </div>
+        <p>Ngôn ngữ:</p>
+        <select onChange={(e) => setLang(e.target.value)}>
+          <option value="vi">Tiếng Việt</option>
+          <option value="en">English</option>
+        </select>
 
-        {/* BUTTON */}
-        <div style={{ marginBottom: "20px" }}>
-          <button
-            onClick={handleTranslate}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#4CAF50",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            📄 Dịch
-          </button>
+        <br /><br />
 
-          <button
-            onClick={handleSpeak}
-            style={{
-              padding: "10px 20px",
-              marginLeft: "10px",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#2196F3",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            🔊 Phát
-          </button>
-        </div>
+        <button onClick={handleTranslate}>📄 Dịch</button>
+        <button onClick={handleSpeak} style={{ marginLeft: 10 }}>
+          🔊 Phát
+        </button>
 
-        {/* CONTENT */}
-        <div
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            padding: "20px",
-            minHeight: "120px",
-            backgroundColor: "#fafafa",
-          }}
-        >
-          {text || "Nội dung thuyết minh sẽ hiển thị tại đây..."}
+        <div style={{ marginTop: 20, padding: 10, border: "1px solid #ccc" }}>
+          {text || "Nội dung sẽ hiển thị tại đây..."}
         </div>
       </div>
     </div>
