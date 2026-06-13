@@ -1,57 +1,46 @@
-import { useState } from "react";
+import { useParams } from "react-router-dom";
 
-export default function BoothPage() {
-  const [text, setText] = useState("");
-  const [lang, setLang] = useState("vi");
+export default function BoothPage(){
 
-  const handleTranslate = () => {
-    if (lang === "vi") setText("VinAI là công ty AI hàng đầu Việt Nam.");
-    if (lang === "en") setText("VinAI is a leading AI company in Vietnam.");
+  const { id } = useParams();
+
+  const lang = localStorage.getItem("lang") || "en";
+
+  const data = {
+    1:{
+      vi:"Pizza Ý truyền thống",
+      en:"Italian Pizza"
+    }
   };
 
-  const handleSpeak = () => {
+  const booth = data[id];
+
+  const text = booth ? (booth[lang] || booth.en) : "";
+
+  const label = {
+    vi: "Nghe",
+    en: "Listen"
+  };
+
+  const speak = ()=>{
+    if(!text) return;
+
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = lang === "en" ? "en-US" : "vi-VN";
+    speech.lang = lang === "vi" ? "vi-VN" : "en-US";
     speechSynthesis.speak(speech);
   };
 
   return (
-    <div
-      style={{
-        background: "linear-gradient(135deg, #007bff, #00c6ff)",
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center"
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          padding: "25px",
-          borderRadius: "12px",
-          width: "320px"
-        }}
-      >
-        <h2 style={{ textAlign: "center" }}>🎤 Booth</h2>
+    <div style={{padding:30}}>
 
-        <select
-          onChange={(e) => setLang(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px" }}
-        >
-          <option value="vi">Tiếng Việt</option>
-          <option value="en">English</option>
-        </select>
+      <h2>Booth {id}</h2>
 
-        <button onClick={handleTranslate}>Dịch</button>
-        <button onClick={handleSpeak} style={{ marginLeft: 10 }}>
-          Phát
-        </button>
+      <p>{text}</p>
 
-        <div style={{ marginTop: 15 }}>
-          {text}
-        </div>
-      </div>
+      <button onClick={speak}>
+        🔊 {label[lang]}
+      </button>
+
     </div>
   );
 }

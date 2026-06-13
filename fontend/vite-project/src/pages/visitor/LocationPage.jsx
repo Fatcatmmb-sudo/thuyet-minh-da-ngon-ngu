@@ -1,18 +1,33 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function LocationPage() {
+export default function LocationPage(){
+
   const navigate = useNavigate();
 
-  return (
-    <div style={{ textAlign: "center", marginTop: "80px" }}>
-      <h2>📍 Đang xác định vị trí...</h2>
+  useEffect(()=>{
+    navigator.geolocation.getCurrentPosition(
 
-      <button
-        onClick={() => navigate("/map")}
-        style={{ marginTop: "20px" }}
-      >
-        Tiếp tục
-      </button>
+      ()=>navigate("/booth/1"),
+
+      ()=>{
+        alert("Enable GPS or use map");
+        navigate("/map");
+      }
+
+    );
+  },[]);
+
+  return (
+    <div style={styles}>
+      <h2>📍 Detecting location...</h2>
     </div>
   );
 }
+
+const styles={
+  height:"100vh",
+  display:"flex",
+  justifyContent:"center",
+  alignItems:"center"
+};
