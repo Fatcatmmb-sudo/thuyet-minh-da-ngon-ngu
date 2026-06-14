@@ -5,8 +5,8 @@
 /* ── Page wrapper ── */
 .db-page {
   padding: 28px 32px;
-  max-width: 1200px;
-  margin: 0 auto;
+  
+  
   font-family: 'Inter', sans-serif;
   display: flex;
   flex-direction: column;

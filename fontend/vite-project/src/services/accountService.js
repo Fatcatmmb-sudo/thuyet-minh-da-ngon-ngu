@@ -1,57 +1,54 @@
+// accountService.js
 import apiClient from "./apiClient";
 
-// ─── Account Service ──────────────────────────────────────────
-// Phục vụ: AccountManagementPage
-// API: /api/accounts
-
 const accountService = {
-  /**
-   * Lấy danh sách tài khoản (phân trang + filter role/status)
-   * @param {{ page?, pageSize?, role?, status?, search? }} params
-   * @returns {{ items: Account[], total: number }}
-   */
-  getAll: ({ page = 1, pageSize = 10, role = "", status = "", search = "" } = {}) => {
-    const q = new URLSearchParams();
-    q.set("page",     page);
-    q.set("pageSize", pageSize);
-    if (role)   q.set("role",   role);
-    if (status) q.set("status", status);
-    if (search) q.set("search", search);
-    return apiClient.get(`/accounts?${q}`);
-  },
+  getAll: ({ page = 1, pageSize = 10, role = "", search = "" } = {}) =>
+    apiClient.get(
+      `/admin/accounts?page=${page}&pageSize=${pageSize}&role=${role}&search=${search}`
+    ).then(res => ({
+      items:      (res.data ?? res.items ?? []).map(a => ({
+        id:             a.id,
+        username:       a.username,
+        email:          a.email,
+        role:           a.role,
+        status:         a.isActive ? "active" : "inactive",
+        createdAt:      new Date(a.createdAt).toLocaleDateString("vi-VN"),
+        company:        a.companyName        ?? "",
+        representative: a.representativeName ?? "",
+        phone:          a.phoneNumber        ?? "",
+      })),
+      total:      res.total      ?? 0,
+      totalPages: res.totalPages ?? 1,
+    })),
 
-  /**
-   * Tạo tài khoản mới (kèm thông tin vendor nếu role = Vendor)
-   * @param {{ username, email, role, company?, representative?, phone? }} data
-   * @returns {Account}
-   */
-  create: (data) =>
-    apiClient.post("/accounts", data),
+  getById: (id) => apiClient.get(`/admin/accounts/${id}`),
 
-  /**
-   * Cập nhật thông tin tài khoản
-   * @param {string|number} id
-   * @param {Partial<Account>} data
-   * @returns {Account}
-   */
-  update: (id, data) =>
-    apiClient.put(`/accounts/${id}`, data),
+  create: (form) =>
+    apiClient.post("/admin/accounts", {
+      username:           form.username,
+      email:              form.email,
+      password:           "AutoPass@123",
+      role:               form.role,
+      companyName:        form.company,
+      representativeName: form.representative,
+      phoneNumber:        form.phone,
+    }),
 
-  /**
-   * Khóa hoặc mở tài khoản
-   * @param {string|number} id
-   * @param {"active"|"inactive"} status
-   * @returns {Account}
-   */
+  update: (id, form) =>
+    apiClient.put(`/admin/accounts/${id}`, {
+      email:              form.email,
+      companyName:        form.company,
+      representativeName: form.representative,
+      phoneNumber:        form.phone,
+    }),
+
   setStatus: (id, status) =>
-    apiClient.patch(`/accounts/${id}/status`, { status }),
+    apiClient.patch(`/admin/accounts/${id}/status?isActive=${status === "active"}`),
 
-  /**
-   * Reset mật khẩu → backend tự sinh + gửi email
-   * @param {string|number} id
-   */
   resetPassword: (id) =>
-    apiClient.post(`/accounts/${id}/reset-password`),
+    apiClient.patch(`/admin/accounts/${id}/reset-password`, {
+      newPassword: "AutoPass@123"
+    }),
 };
 
 export default accountService;

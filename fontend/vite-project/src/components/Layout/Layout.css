@@ -1,3 +1,13 @@
+/* Reset toàn trang */
+*, *::before, *::after { box-sizing: border-box; }
+
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
 .layout {
   display: flex;
   flex-direction: column;
@@ -10,10 +20,12 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .layout__main {
   flex: 1;
   overflow-y: auto;
   background: #f9fafb;
+  min-width: 0; /* quan trọng — tránh overflow */
 }

@@ -1,5 +1,7 @@
+import logo from "../../assets/img/logo-full.svg";
 import "./Navbar.css";
 
+// ─── Icons ────────────────────────────────────────────────────
 const IconLogout = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -18,8 +20,8 @@ const IconMenu = () => (
 
 /**
  * Props:
- *  - user        : { username: string, role: string }
- *  - onLogout    : () => void
+ *  - user           : { username: string, role: string }
+ *  - onLogout       : () => void
  *  - onToggleSidebar: () => void  (mobile hamburger)
  */
 export default function Navbar({ user, onLogout, onToggleSidebar }) {
@@ -29,7 +31,7 @@ export default function Navbar({ user, onLogout, onToggleSidebar }) {
         <button className="navbar__hamburger" onClick={onToggleSidebar} aria-label="Toggle menu">
           <IconMenu />
         </button>
-        <span className="navbar__brand">🎙 AutoNarration</span>
+        <img src={logo} alt="AutoNarration" className="navbar__logo" />
       </div>
 
       <div className="navbar__right">

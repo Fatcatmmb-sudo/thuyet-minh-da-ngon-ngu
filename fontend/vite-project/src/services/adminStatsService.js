@@ -1,30 +1,33 @@
+// adminStatsService.js
 import apiClient from "./apiClient";
 
-// Service dành riêng cho Admin Dashboard
-// Gọi các endpoint: /api/admin/stats/*
-
 const adminStatsService = {
-  /**
-   * Lấy số liệu tổng quan (stat cards)
-   * Returns: { events, eventsDelta, booths, boothsDelta, listensToday, listensDelta }
-   */
-  getSummary: () => apiClient.get("/admin/stats/summary"),
+  getSummary: () =>
+    apiClient.get("/admin/stats/summary").then(res => ({
+      events:       res.totalEvents    ?? 0,
+      booths:       res.totalBooths    ?? 0,
+      listensToday: res.listensToday   ?? 0,
+      eventsDelta:  null,
+      boothsDelta:  null,
+      listensDelta: null,
+    })),
 
-  /**
-   * Lấy dữ liệu biểu đồ lượt nghe
-   * @param {string} range - "7d" | "30d" | "today"
-   * Returns: { labels: string[], values: number[] }
-   *       hoặc [{ day, value }] tuỳ backend
-   */
-  getChart: (range = "7d") => apiClient.get(`/admin/stats/chart?range=${range}`),
+  getChart: (range = "7d") =>
+    apiClient.get(`/admin/stats/chart?range=${range}`),
 
-  /**
-   * Lấy top gian hàng theo lượt nghe hôm nay
-   * @param {number} limit - số lượng muốn lấy (mặc định 5)
-   * Returns: [{ id, name, event, visits, pct }]
-   */
   getTopBooths: (limit = 5) =>
-    apiClient.get(`/admin/stats/top-booths?date=today&limit=${limit}`),
+    apiClient.get(`/admin/stats/top-booths?date=today&limit=${limit}`)
+      .then(res =>
+        (Array.isArray(res) ? res : []).map((b, idx, arr) => ({
+          id:     b.boothId,
+          name:   b.name,
+          event:  b.event ?? "",
+          visits: b.listens ?? 0,
+          pct:    arr[0]?.listens
+                    ? Math.round((b.listens / arr[0].listens) * 100)
+                    : 0,
+        }))
+      ),
 };
 
 export default adminStatsService;

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="64" viewBox="0 0 320 64" role="img">
+  <title>AutoNarration</title>
+
+  <!-- icon circle -->
+  <circle cx="32" cy="32" r="28" fill="#6366f1"/>
+
+  <!-- mic body -->
+  <rect x="24" y="14" width="16" height="24" rx="8" fill="white"/>
+
+  <!-- mic stand arc -->
+  <path d="M16 34 Q16 46 32 46 Q48 46 48 34" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- mic pole -->
+  <line x1="32" y1="46" x2="32" y2="53" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- mic base -->
+  <line x1="23" y1="53" x2="41" y2="53" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- wave right -->
+  <path d="M51 22 Q58 32 51 42" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
+  <path d="M56 17 Q66 32 56 47" fill="none" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- wave left -->
+  <path d="M13 22 Q6 32 13 42" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
+  <path d="M8 17 Q-2 32 8 47" fill="none" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- brand name -->
+  <text x="76" y="38" font-family="Inter,sans-serif" font-size="22" font-weight="700" fill="#111827" letter-spacing="-0.3">AutoNarration</text>
+</svg>

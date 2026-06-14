@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Layout from "../../components/Layout/Layout";
 import StatCard from "../../components/StatCard/StatCard";
 import Toast, { useToast } from "../../components/Toast/Toast";
-import adminStatsService from "../../services/adminStatsService"; // ✅ Sửa từ reportService
+import adminStatsService from "../../services/adminStatsService";
+import activityService from "../../services/activityService";
 import "./DashboardPage.css";
 
 // ─── Icons ────────────────────────────────────────────────────
@@ -23,7 +25,6 @@ function today() {
 function BarChart({ data }) {
   const max = Math.max(...data.map(d => d.value), 1);
   const [hovered, setHovered] = useState(null);
-
   return (
     <div className="db-chart">
       <div className="db-chart__bars">
@@ -31,19 +32,12 @@ function BarChart({ data }) {
           const h = Math.round((d.value / max) * 100);
           const isHovered = hovered === i;
           return (
-            <div
-              key={d.day ?? i}
-              className="db-chart__col"
+            <div key={d.day ?? i} className="db-chart__col"
               onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              {isHovered && (
-                <div className="db-chart__tooltip">{d.value.toLocaleString()}</div>
-              )}
-              <div
-                className={`db-chart__bar ${isHovered ? "db-chart__bar--hovered" : ""}`}
-                style={{ height: `${h}%` }}
-              />
+              onMouseLeave={() => setHovered(null)}>
+              {isHovered && <div className="db-chart__tooltip">{d.value.toLocaleString()}</div>}
+              <div className={`db-chart__bar ${isHovered ? "db-chart__bar--hovered" : ""}`}
+                style={{ height: `${h}%` }} />
               <span className="db-chart__label">{d.day}</span>
             </div>
           );
@@ -73,29 +67,31 @@ function ListSkeleton({ rows = 5 }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────
-export default function AdminDashboardPage() {
+export default function DashboardPage() {
   const navigate = useNavigate();
   const { toasts, showToast } = useToast();
 
-  const [stats,      setStats]      = useState(null);
-  const [chartData,  setChartData]  = useState([]);
-  const [topBooths,  setTopBooths]  = useState([]);
+  const [stats,        setStats]        = useState(null);
+  const [chartData,    setChartData]    = useState([]);
+  const [topBooths,    setTopBooths]    = useState([]);
+  const [activity,     setActivity]     = useState([]);
 
-  const [loadingStats,  setLoadingStats]  = useState(true);
-  const [loadingChart,  setLoadingChart]  = useState(true);
-  const [loadingBooths, setLoadingBooths] = useState(true);
+  const [loadingStats,    setLoadingStats]    = useState(true);
+  const [loadingChart,    setLoadingChart]    = useState(true);
+  const [loadingBooths,   setLoadingBooths]   = useState(true);
+  const [loadingActivity, setLoadingActivity] = useState(true);
 
-  // ── Fetch stat cards ────────────────────────────────────────
+  // ── Fetch summary ──────────────────────────────────────────
   useEffect(() => {
-    adminStatsService.getSummary() // ✅ đổi từ reportService
+    adminStatsService.getSummary()
       .then(setStats)
       .catch(err => showToast(err.message || "Không thể tải số liệu.", "error"))
       .finally(() => setLoadingStats(false));
   }, []);
 
-  // ── Fetch chart ─────────────────────────────────────────────
+  // ── Fetch chart ────────────────────────────────────────────
   useEffect(() => {
-    adminStatsService.getChart("7d") // ✅ đổi từ reportService
+    adminStatsService.getChart("7d")
       .then(res => {
         const normalized = res.labels
           ? res.labels.map((day, i) => ({ day, value: res.values[i] ?? 0 }))
@@ -106,176 +102,144 @@ export default function AdminDashboardPage() {
       .finally(() => setLoadingChart(false));
   }, []);
 
-  // ── Fetch top booths ────────────────────────────────────────
+  // ── Fetch top booths ───────────────────────────────────────
   useEffect(() => {
-    adminStatsService.getTopBooths(5) // ✅ đổi từ reportService
+    adminStatsService.getTopBooths(5)
       .then(setTopBooths)
       .catch(err => showToast(err.message || "Không thể tải top gian hàng.", "error"))
       .finally(() => setLoadingBooths(false));
   }, []);
 
+  // ── Fetch activity ─────────────────────────────────────────
+  useEffect(() => {
+    activityService.getRecent(5)
+      .then(setActivity)
+      .catch(() => setActivity([]))
+      .finally(() => setLoadingActivity(false));
+  }, []);
+
   const totalListens = chartData.reduce((s, d) => s + (d.value ?? 0), 0);
 
   return (
-    <div className="db-page">
-      <Toast toasts={toasts} />
+    <Layout>
+      <div className="db-page">
+        <Toast toasts={toasts} />
 
-      {/* ── Header ── */}
-      <div className="db-header">
-        <div className="db-header__left">
-          <p className="db-header__greeting">Xin chào, Admin 👋</p>
-          <h1 className="db-header__title">Dashboard</h1>
-          <p className="db-header__date">📅 {today()}</p>
+        {/* ── Header ── */}
+        <div className="db-header">
+          <div className="db-header__left">
+            <p className="db-header__greeting">Xin chào, Admin 👋</p>
+            <h1 className="db-header__title">Dashboard</h1>
+            <p className="db-header__date">📅 {today()}</p>
+          </div>
+          <div className="db-header__actions">
+            <button className="db-btn db-btn--outline" onClick={() => navigate("/admin/events")}>
+              <IconCalendar /> Tạo sự kiện
+            </button>
+            <button className="db-btn db-btn--primary" onClick={() => navigate("/admin/booths")}>
+              <IconPlus /> Tạo gian hàng
+            </button>
+          </div>
         </div>
-        <div className="db-header__actions">
-          <button className="db-btn db-btn--outline" onClick={() => navigate("/admin/events")}>
-            <IconCalendar /> Tạo sự kiện
-          </button>
-          <button className="db-btn db-btn--primary" onClick={() => navigate("/admin/booths")}>
-            <IconPlus /> Tạo gian hàng
-          </button>
+
+        {/* ── Stat cards ── */}
+        <div className="db-stats">
+          {loadingStats ? (
+            <><div className="db-stat-skeleton" /><div className="db-stat-skeleton" /><div className="db-stat-skeleton" /></>
+          ) : stats ? (
+            <>
+              <StatCard icon={<IconCalendar />}  label="Sự kiện đang mở"   value={stats.events}  sub={stats.eventsDelta}  color="blue"   />
+              <StatCard icon={<IconPackage />}   label="Gian hàng active"  value={stats.booths}  sub={stats.boothsDelta}  color="purple" />
+              <StatCard icon={<IconHeadphone />} label="Lượt nghe hôm nay" value={typeof stats.listensToday === "number" ? stats.listensToday.toLocaleString() : stats.listensToday} sub={stats.listensDelta} color="green" />
+            </>
+          ) : null}
         </div>
-      </div>
 
-      {/* ── Stat cards ── */}
-      <div className="db-stats">
-        {loadingStats ? (
-          <>
-            <div className="db-stat-skeleton" />
-            <div className="db-stat-skeleton" />
-            <div className="db-stat-skeleton" />
-          </>
-        ) : stats ? (
-          <>
-            <StatCard
-              icon={<IconCalendar />}
-              label="Sự kiện đang mở"
-              value={stats.events}
-              sub={stats.eventsDelta}
-              color="blue"
-            />
-            <StatCard
-              icon={<IconPackage />}
-              label="Gian hàng active"
-              value={stats.booths}
-              sub={stats.boothsDelta}
-              color="purple"
-            />
-            <StatCard
-              icon={<IconHeadphone />}
-              label="Lượt nghe hôm nay"
-              value={typeof stats.listensToday === "number" ? stats.listensToday.toLocaleString() : stats.listensToday}
-              sub={stats.listensDelta}
-              color="green"
-            />
-          </>
-        ) : null}
-      </div>
+        {/* ── Grid: chart + activity ── */}
+        <div className="db-grid">
 
-      {/* ── Main grid: chart + activity ── */}
-      <div className="db-grid">
-
-        {/* Biểu đồ lượt nghe */}
-        <div className="db-card db-card--chart">
-          <div className="db-card__head">
-            <div>
-              <h2 className="db-card__title">Lượt nghe 7 ngày qua</h2>
-              <p className="db-card__sub">
-                Tổng: <strong>{totalListens.toLocaleString()}</strong> lượt
-              </p>
+          {/* Biểu đồ */}
+          <div className="db-card db-card--chart">
+            <div className="db-card__head">
+              <div>
+                <h2 className="db-card__title">Lượt nghe 7 ngày qua</h2>
+                <p className="db-card__sub">Tổng: <strong>{totalListens.toLocaleString()}</strong> lượt</p>
+              </div>
+              {stats && (
+                <span className="db-trend"><IconTrendUp /> {stats.listensDelta ?? ""}</span>
+              )}
             </div>
-            {stats && (
-              <span className="db-trend">
-                <IconTrendUp /> {stats.listensDelta ?? ""}
-              </span>
+            {loadingChart
+              ? <ChartSkeleton />
+              : chartData.length === 0
+                ? <p className="db-empty-text">Chưa có dữ liệu.</p>
+                : <BarChart data={chartData} />
+            }
+          </div>
+
+          {/* Hoạt động gần đây */}
+          <div className="db-card db-card--activity">
+            <div className="db-card__head">
+              <h2 className="db-card__title">Hoạt động gần đây</h2>
+            </div>
+            {loadingActivity ? (
+              <ListSkeleton rows={4} />
+            ) : activity.length === 0 ? (
+              <p className="db-empty-text">Chưa có hoạt động nào.</p>
+            ) : (
+              <div className="db-activity">
+                {activity.map((item, idx) => (
+                  <div key={item.id} className="db-activity__item">
+                    <div className={`db-activity__dot db-activity__dot--${item.color}`}><IconDot /></div>
+                    {idx < activity.length - 1 && <div className="db-activity__line" />}
+                    <div className="db-activity__body">
+                      <p className="db-activity__text">{item.text}</p>
+                      <p className="db-activity__sub">{item.sub}</p>
+                    </div>
+                    <span className="db-activity__time">{item.time}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          {loadingChart
-            ? <ChartSkeleton />
-            : <BarChart data={chartData} />
-          }
         </div>
 
-        {/* Placeholder activity */}
-        <div className="db-card db-card--activity">
+        {/* ── Top booths ── */}
+        <div className="db-card db-card--full">
           <div className="db-card__head">
-            <h2 className="db-card__title">Hoạt động gần đây</h2>
+            <div>
+              <h2 className="db-card__title">Top gian hàng hôm nay</h2>
+              <p className="db-card__sub">Xếp theo lượt nghe</p>
+            </div>
+            <button className="db-link-btn" onClick={() => navigate("/admin/reports")}>
+              Xem báo cáo đầy đủ <IconArrow />
+            </button>
           </div>
-          <RecentActivity showToast={showToast} />
+          {loadingBooths ? (
+            <ListSkeleton rows={5} />
+          ) : topBooths.length === 0 ? (
+            <p className="db-empty-text">Chưa có dữ liệu.</p>
+          ) : (
+            <div className="db-top-list">
+              {topBooths.map((booth, idx) => (
+                <div key={booth.id} className="db-top-item">
+                  <span className={`db-top-rank ${idx === 0 ? "db-top-rank--gold" : idx === 1 ? "db-top-rank--silver" : idx === 2 ? "db-top-rank--bronze" : ""}`}>
+                    {idx + 1}
+                  </span>
+                  <div className="db-top-info">
+                    <span className="db-top-name">{booth.name}</span>
+                    <span className="db-top-event">{booth.event}</span>
+                  </div>
+                  <div className="db-top-bar-wrap">
+                    <div className="db-top-bar" style={{ width: `${booth.pct}%` }} />
+                  </div>
+                  <span className="db-top-visits">{booth.visits.toLocaleString()} lượt</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* ── Top booths ── */}
-      <div className="db-card db-card--full">
-        <div className="db-card__head">
-          <div>
-            <h2 className="db-card__title">Top gian hàng hôm nay</h2>
-            <p className="db-card__sub">Xếp theo lượt nghe</p>
-          </div>
-          <button className="db-link-btn" onClick={() => navigate("/admin/reports")}>
-            Xem báo cáo đầy đủ <IconArrow />
-          </button>
-        </div>
-
-        {loadingBooths ? (
-          <ListSkeleton rows={5} />
-        ) : topBooths.length === 0 ? (
-          <p className="db-empty-text">Chưa có dữ liệu.</p>
-        ) : (
-          <div className="db-top-list">
-            {topBooths.map((booth, idx) => (
-              <div key={booth.id} className="db-top-item">
-                <span className={`db-top-rank ${idx === 0 ? "db-top-rank--gold" : idx === 1 ? "db-top-rank--silver" : idx === 2 ? "db-top-rank--bronze" : ""}`}>
-                  {idx + 1}
-                </span>
-                <div className="db-top-info">
-                  <span className="db-top-name">{booth.name}</span>
-                  <span className="db-top-event">{booth.event}</span>
-                </div>
-                <div className="db-top-bar-wrap">
-                  <div className="db-top-bar" style={{ width: `${booth.pct}%` }} />
-                </div>
-                <span className="db-top-visits">{booth.visits.toLocaleString()} lượt</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Recent Activity ──────────────────────────────────────────
-function RecentActivity({ showToast }) {
-  const [items, setItems]     = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // TODO: thay bằng activityService.getRecent() khi backend sẵn sàng
-    setLoading(false);
-  }, []);
-
-  if (loading) return <div className="db-skeleton db-skeleton--activity" />;
-
-  if (items.length === 0) {
-    return <p className="db-empty-text">Chưa có hoạt động nào.</p>;
-  }
-
-  return (
-    <div className="db-activity">
-      {items.map((item, idx) => (
-        <div key={item.id} className="db-activity__item">
-          <div className={`db-activity__dot db-activity__dot--${item.color}`}>
-            <IconDot />
-          </div>
-          {idx < items.length - 1 && <div className="db-activity__line" />}
-          <div className="db-activity__body">
-            <p className="db-activity__text">{item.text}</p>
-            <p className="db-activity__sub">{item.sub}</p>
-          </div>
-          <span className="db-activity__time">{item.time}</span>
-        </div>
-      ))}
-    </div>
+    </Layout>
   );
 }

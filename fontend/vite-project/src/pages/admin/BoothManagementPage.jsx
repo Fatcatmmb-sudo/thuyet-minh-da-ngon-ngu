@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import Layout from "../components/Layout";
-import ConfirmDialog from "../components/ConfirmDialog";
-import GoogleMap from "../components/GoogleMap";
-import QRCodeGenerator from "../components/QRCodeGenerator";
-import StatCard from "../components/StatCard";
-import { useToast } from "../components/Toast";
-import Toast from "../components/Toast";
-import LoadingSpinner from "../components/LoadingSpinner";
-import boothService from "../services/boothService";
-import eventService from "../services/eventService";
+import Layout from "../../components/Layout/Layout";
+import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
+import GoogleMap from "../../components/GoogleMap/GoogleMap";
+import QRCodeGenerator from "../../components/QRCodeGenerator/QRCodeGenerator";
+import StatCard from "../../components/StatCard/StatCard";
+import { useToast } from "../../components/Toast/Toast";
+import Toast from "../../components/Toast/Toast";
+import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
+import boothService from "../../services/boothService";
+import eventService from "../../services/eventService";
 import "./BoothManagementPage.css";
 
 // ─── Constants ────────────────────────────────────────────────
